@@ -995,8 +995,7 @@ async function clientLoginTop(){
 // Aquiklin, on récupère d'abord la valeur existante pour ne pas écraser
 // ce que l'app îlots flottants y aurait déjà enregistré (sous-clé "ilot").
 async function upsertClientProfileAnalyse(payload){
-  const { data: authData } = await sb.auth.getUser();
-  const uid = authData && authData.user && authData.user.id;
+  const uid = payload.uid;
   if(!uid) return null;
   let existingPondProfile = {};
   try{
@@ -1714,12 +1713,15 @@ async function transmitToAquiklin(){
       accountMsg = ' (Compte non créé : ' + (signUpError.message || 'un compte existe peut-être déjà avec cet email — utilisez plutôt la connexion en haut de page') + ')';
     } else if(signUpData && signUpData.session){
       // Confirmation email désactivée (ou déjà confirmée) : session active
-      // immédiatement, la fiche client peut être enregistrée tout de suite.
+      // immédiatement.
       clientProfile = { user_id: signUpData.user.id, email };
     } else if(signUpData && signUpData.user){
       // Confirmation email requise : pas de session tant qu'elle n'est pas
-      // validée, donc pas d'écriture dans "clients" pour l'instant — le
-      // dossier est transmis normalement, sans compte rattaché pour le moment.
+      // validée. On enregistre quand même la fiche client dès maintenant
+      // (policy clients_anon_insert autorise cette écriture sans session),
+      // pour que les coordonnées et la pièce d'eau ne soient pas perdues
+      // en attendant que le client clique sur le lien de confirmation.
+      clientProfile = { user_id: signUpData.user.id, email };
       accountMsg = ' Un email de confirmation a été envoyé à ' + email + ' — confirmez-le pour retrouver vos informations la prochaine fois, sur ce site comme sur celui des îlots flottants.';
     }
   }
@@ -1727,6 +1729,7 @@ async function transmitToAquiklin(){
   let clientId = null;
   if(clientProfile && clientProfile.user_id){
     clientId = await upsertClientProfileAnalyse({
+      uid: clientProfile.user_id,
       prenom, nom, email, telephone, code_postal: cp, commune,
       pondData: {
         type_piece: formData.type_piece || null,
