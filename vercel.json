@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/aquiklin_final_2.html" }
+    { "source": "/", "destination": "//aquiklin_final_2_migre.html" }
   ]
 }
