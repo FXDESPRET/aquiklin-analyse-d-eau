@@ -928,11 +928,24 @@ async function loginOp(){
     document.getElementById('o-password').value='';
     return;
   }
-  // Vérifie que ce compte fait partie du personnel (table admin_users) avant
-  // d'ouvrir la console : un compte client (créé côté formulaire public) ne
-  // doit jamais y accéder, même s'il a des identifiants Supabase valides.
+  // Vérifie que ce compte fait partie du personnel avant d'ouvrir la
+  // console : un compte client (créé côté formulaire public) ne doit
+  // jamais y accéder, même s'il a des identifiants Supabase valides.
+  // Deux systèmes coexistent sur ce projet Supabase, partagé avec l'app
+  // îlots flottants (voir migration_analyse_eau_admin_unification.sql,
+  // 31/08/2026) : la table admin_users, historique et propre à cette app,
+  // ET la table profiles (colonne role) mise en place pour l'app îlots
+  // flottants. Un compte est reconnu opérateur ici s'il figure dans L'UN
+  // OU L'AUTRE — sans ça, un compte promu admin côté îlots flottants
+  // (update profiles set role='admin') resterait bloqué ici, alors que la
+  // migration SQL lui a déjà donné les droits réels en base (RLS).
   const { data: adminRow } = await sb.from('admin_users').select('user_id').eq('user_id', data.user.id).maybeSingle();
-  if(!adminRow){
+  let isStaff = !!adminRow;
+  if(!isStaff){
+    const { data: profileRow } = await sb.from('profiles').select('role').eq('id', data.user.id).maybeSingle();
+    isStaff = !!(profileRow && profileRow.role === 'admin');
+  }
+  if(!isStaff){
     errEl.textContent = "Ce compte n'a pas accès à la console opérateur.";
     errEl.classList.add('show');
     await sb.auth.signOut();
