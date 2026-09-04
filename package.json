@@ -1,0 +1,9 @@
+{
+  "name": "aquiklin-analyse-eau-api",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Fonctions serveur (Vercel Serverless Functions) pour l'app Analyse d'eau : envoi sécurisé de photos/documents client, notifications e-mail, nettoyage automatique.",
+  "dependencies": {
+    "archiver": "^7.0.1"
+  }
+}
